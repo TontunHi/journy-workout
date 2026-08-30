@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum MuscleGroup {
+  CHEST
+  BACK
+  LEGS
+  ARMS
+  SHOULDERS
+  CORE
+}
+
+enum CardioType {
+  TREADMILL
+  CYCLING
+  SWIMMING
+  JUMP_ROPE
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SUPPER
+  SNACK
+}
+
+enum StreakType {
+  WORKOUT
+  NUTRITION
+}
+
+enum NotificationType {
+  WORKOUT_REMINDER
+  MEAL_REMINDER
+  STREAK_WARNING
+  DAILY_SUMMARY
+  PR_ALERT
+}
+
+// ─── Exercise Catalog ────────────────────────────────────
+
+model Exercise {
+  id          String      @id @default(cuid())
+  name        String
+  muscleGroup MuscleGroup
+  isPreset    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  workoutSets WorkoutSet[]
+
+  @@index([muscleGroup])
+}
+
+// ─── Workout Logging ─────────────────────────────────────
+
+model WorkoutSession {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now())
+  duration  Int?     // minutes
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sets WorkoutSet[]
+
+  @@index([date])
+}
+
+model WorkoutSet {
+  id        String @id @default(cuid())
+  setNumber Int
+  reps      Int
+  weight    Float  // kg
+  notes     String?
+
+  session   WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId String
+
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  exerciseId String
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([exerciseId])
+}
+
+// ─── Cardio Logging ──────────────────────────────────────
+
+model CardioSession {
+  id             String    @id @default(cuid())
+  type           CardioType
+  date           DateTime  @default(now())
+  duration       Int       // minutes
+  distance       Float?    // km
+  caloriesBurned Int?      // kcal
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([date])
+  @@index([type])
+}
+
+// ─── Nutrition Logging ───────────────────────────────────
+
+model NutritionEntry {
+  id       String   @id @default(cuid())
+  date     DateTime @default(now())
+  mealType MealType
+  foodName String
+  calories Int      // kcal
+  protein  Float?   // grams
+  carbs    Float?   // grams
+  fat      Float?   // grams
+  photoUrl String?
+  notes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([mealType])
+}
+
+model NutritionGoal {
+  id            String @id @default(cuid())
+  dailyCalories Int    @default(2000)
+  dailyProtein  Float  @default(150) // grams
+  dailyCarbs    Float  @default(250) // grams
+  dailyFat      Float  @default(65)  // grams
+
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Body Weight Tracking ────────────────────────────────
+
+model BodyWeight {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  weight    Float    // kg
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
+
+// ─── Streak Tracking ─────────────────────────────────────
+
+model Streak {
+  id             String     @id @default(cuid())
+  type           StreakType  @unique
+  currentStreak  Int        @default(0)
+  longestStreak  Int        @default(0)
+  lastActiveDate DateTime?
+
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Notification Settings ───────────────────────────────
+
+model NotificationSetting {
+  id               String           @id @default(cuid())
+  type             NotificationType @unique
+  enabled          Boolean          @default(false)
+  time             String?          // HH:mm format
+  daysOfWeek       Json?            // e.g. [1,2,3,4,5] for weekdays
+  pushSubscription Json?            // PushSubscription object
+
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Personal Records ────────────────────────────────────
+
+model PersonalRecord {
+  id         String   @id @default(cuid())
+  exerciseId String
+  weight     Float    // kg
+  reps       Int
+  date       DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([exerciseId])
+  @@index([exerciseId])
+}
