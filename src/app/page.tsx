@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Dumbbell, Activity, Utensils, Settings, Flame, Trophy } from 'lucide-react';
+import { Dumbbell, Activity, Utensils, Settings, Flame, Trophy, Scale, Check } from 'lucide-react';
 
 interface DashboardData {
   todayWorkouts: number;
@@ -24,7 +24,14 @@ export default function Page() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Daily Weight Logger State
+  const [todayWeight, setTodayWeight] = useState<number | null>(null);
+  const [weightInput, setWeightInput] = useState('');
+  const [showWeightInput, setShowWeightInput] = useState(false);
+  const [savingWeight, setSavingWeight] = useState(false);
+
   useEffect(() => {
+    // Fetch Dashboard stats
     fetch('/api/stats/dashboard')
       .then((res) => res.json())
       .then((json) => {
@@ -34,7 +41,40 @@ export default function Page() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    // Fetch Today's Weight (or most recent weight)
+    fetch('/api/body-weight')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.data && json.data.length > 0) {
+          const latest = json.data[json.data.length - 1];
+          setTodayWeight(latest.weight);
+        }
+      })
+      .catch(console.error);
   }, []);
+
+  const handleSaveWeight = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!weightInput) return;
+    setSavingWeight(true);
+    try {
+      const res = await fetch('/api/body-weight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weight: parseFloat(weightInput) }),
+      });
+      if (res.ok) {
+        setTodayWeight(parseFloat(weightInput));
+        setShowWeightInput(false);
+        setWeightInput('');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingWeight(false);
+    }
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -74,7 +114,7 @@ export default function Page() {
         </Link>
       </div>
 
-      {/* Streaks */}
+      {/* Streaks & Daily Weight Card */}
       <div className="grid grid-cols-2 gap-3.5">
         <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
           <div className="flex items-center justify-between mb-1">
@@ -93,6 +133,52 @@ export default function Page() {
           <div className="text-2xl font-bold text-slate-100">{nutritionStreak} <span className="text-sm font-normal text-slate-400">Days</span></div>
           <div className="text-xs text-slate-400 mt-0.5">Nutrition Streak</div>
         </div>
+      </div>
+
+      {/* Daily Body Weight Quick Logger Widget */}
+      <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+              <Scale className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs text-slate-400">Daily Body Weight</div>
+              <div className="text-xl font-bold text-slate-100">
+                {todayWeight !== null ? `${todayWeight} kg` : <span className="text-sm text-slate-500 font-normal">Not logged today</span>}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowWeightInput(!showWeightInput)}
+            className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-400 rounded-lg border border-slate-700 transition-colors"
+          >
+            {showWeightInput ? 'Cancel' : todayWeight ? 'Update' : '+ Log Weight'}
+          </button>
+        </div>
+
+        {showWeightInput && (
+          <form onSubmit={handleSaveWeight} className="mt-3.5 pt-3 border-t border-slate-800/80 flex gap-2">
+            <input
+              type="number"
+              step="0.1"
+              required
+              autoFocus
+              value={weightInput}
+              onChange={(e) => setWeightInput(e.target.value)}
+              placeholder="e.g. 75.5 (kg)"
+              className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={savingWeight || !weightInput}
+              className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              {savingWeight ? 'Saving...' : <><Check className="w-4 h-4" /> Save</>}
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Quick Action Cards */}
