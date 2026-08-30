@@ -1,49 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Dumbbell, Activity, Utensils, Settings } from 'lucide-react';
+import { Dumbbell, Activity, Utensils, Settings, Flame, Trophy } from 'lucide-react';
 
-interface Macro {
-  current: number;
-  goal: number;
-}
-
-interface ActivityItem {
-  id: number;
-  type: 'workout' | 'meal' | 'cardio';
-  title: string;
-  time: string;
-}
-
-interface Stats {
-  workoutStreak: number;
-  nutritionStreak: number;
-  calories: Macro;
-  macros: {
-    protein: Macro;
-    carbs: Macro;
-    fat: Macro;
+interface DashboardData {
+  todayWorkouts: number;
+  todayCardio: number;
+  nutrition: {
+    consumedCalories: number;
+    goalCalories: number;
+    consumedProtein: number;
+    goalProtein: number;
   };
-  recentActivity: ActivityItem[];
+  streaks: Array<{
+    type: 'WORKOUT' | 'NUTRITION';
+    current: number;
+    max: number;
+  }>;
 }
 
 export default function Page() {
-  const [stats] = useState<Stats | null>({
-    workoutStreak: 3,
-    nutritionStreak: 5,
-    calories: { current: 1500, goal: 2500 },
-    macros: {
-      protein: { current: 120, goal: 160 },
-      carbs: { current: 150, goal: 250 },
-      fat: { current: 45, goal: 70 },
-    },
-    recentActivity: [
-      { id: 1, type: 'workout', title: 'Upper Body', time: '2 hours ago' },
-      { id: 2, type: 'meal', title: 'Chicken Salad', time: '4 hours ago' },
-      { id: 3, type: 'cardio', title: 'Morning Run (5km)', time: 'Yesterday' },
-    ],
-  });
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/stats/dashboard')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.data) {
+          setData(json.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -58,90 +49,143 @@ export default function Page() {
     day: 'numeric',
   }).format(new Date());
 
-  if (!stats) return <div className="p-6 text-center text-slate-400">Loading...</div>;
+  const workoutStreak = data?.streaks?.find((s) => s.type === 'WORKOUT')?.current || 0;
+  const nutritionStreak = data?.streaks?.find((s) => s.type === 'NUTRITION')?.current || 0;
+  const consumedCalories = data?.nutrition?.consumedCalories || 0;
+  const goalCalories = data?.nutrition?.goalCalories || 2000;
+  const consumedProtein = data?.nutrition?.consumedProtein || 0;
+  const goalProtein = data?.nutrition?.goalProtein || 150;
+
+  const caloriePercentage = Math.min(100, Math.round((consumedCalories / goalCalories) * 100));
 
   return (
-    <main className="p-6 max-w-lg mx-auto space-y-6">
+    <main className="p-6 max-w-lg mx-auto space-y-6 pb-24">
+      {/* Header */}
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold text-slate-100">{getGreeting()}</h1>
           <p className="text-slate-400 text-sm">{today}</p>
         </div>
-        <Link href="/settings" className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-emerald-500">
+        <Link
+          href="/settings"
+          className="p-2.5 bg-slate-900 border border-slate-800 rounded-full text-slate-400 hover:text-emerald-500 transition-colors"
+        >
           <Settings className="w-5 h-5" />
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-          <div className="text-2xl mb-1">🔥</div>
-          <div className="text-xl font-bold text-slate-100">{stats.workoutStreak} Days</div>
-          <div className="text-xs text-slate-400">Workout Streak</div>
+      {/* Streaks */}
+      <div className="grid grid-cols-2 gap-3.5">
+        <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-2xl">🔥</span>
+            <span className="text-xs text-slate-500 font-medium">Consecutive</span>
+          </div>
+          <div className="text-2xl font-bold text-slate-100">{workoutStreak} <span className="text-sm font-normal text-slate-400">Days</span></div>
+          <div className="text-xs text-slate-400 mt-0.5">Workout Streak</div>
         </div>
-        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-          <div className="text-2xl mb-1">🥗</div>
-          <div className="text-xl font-bold text-slate-100">{stats.nutritionStreak} Days</div>
-          <div className="text-xs text-slate-400">Nutrition Streak</div>
+
+        <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-2xl">🥗</span>
+            <span className="text-xs text-slate-500 font-medium">Consecutive</span>
+          </div>
+          <div className="text-2xl font-bold text-slate-100">{nutritionStreak} <span className="text-sm font-normal text-slate-400">Days</span></div>
+          <div className="text-xs text-slate-400 mt-0.5">Nutrition Streak</div>
         </div>
       </div>
 
+      {/* Quick Action Cards */}
       <div className="grid grid-cols-3 gap-3">
-        <Link href="/workout/new" className="flex flex-col items-center justify-center p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-emerald-500/50">
-          <Dumbbell className="w-6 h-6 text-emerald-500 mb-2" />
-          <span className="text-xs font-medium text-slate-300">Workout</span>
+        <Link
+          href="/workout/new"
+          className="flex flex-col items-center justify-center p-3.5 bg-slate-900 rounded-xl border border-slate-800 hover:border-emerald-500/50 transition-colors group"
+        >
+          <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2 group-hover:bg-emerald-500/20">
+            <Dumbbell className="w-5 h-5 text-emerald-400" />
+          </div>
+          <span className="text-xs font-semibold text-slate-200">Log Workout</span>
         </Link>
-        <Link href="/cardio/new" className="flex flex-col items-center justify-center p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-emerald-500/50">
-          <Activity className="w-6 h-6 text-emerald-500 mb-2" />
-          <span className="text-xs font-medium text-slate-300">Cardio</span>
+
+        <Link
+          href="/cardio/new"
+          className="flex flex-col items-center justify-center p-3.5 bg-slate-900 rounded-xl border border-slate-800 hover:border-emerald-500/50 transition-colors group"
+        >
+          <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-2 group-hover:bg-blue-500/20">
+            <Activity className="w-5 h-5 text-blue-400" />
+          </div>
+          <span className="text-xs font-semibold text-slate-200">Log Cardio</span>
         </Link>
-        <Link href="/nutrition/new" className="flex flex-col items-center justify-center p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-emerald-500/50">
-          <Utensils className="w-6 h-6 text-emerald-500 mb-2" />
-          <span className="text-xs font-medium text-slate-300">Meal</span>
+
+        <Link
+          href="/nutrition/new"
+          className="flex flex-col items-center justify-center p-3.5 bg-slate-900 rounded-xl border border-slate-800 hover:border-emerald-500/50 transition-colors group"
+        >
+          <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 group-hover:bg-amber-500/20">
+            <Utensils className="w-5 h-5 text-amber-400" />
+          </div>
+          <span className="text-xs font-semibold text-slate-200">Log Meal</span>
         </Link>
       </div>
 
-      <div className="bg-slate-800 p-5 rounded-xl border border-slate-700">
-        <div className="flex justify-between items-end mb-4">
-          <h2 className="text-lg font-semibold">Today&apos;s Nutrition</h2>
+      {/* Today Nutrition Progress */}
+      <div className="bg-slate-900 p-5 rounded-xl border border-slate-800">
+        <div className="flex justify-between items-end mb-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-200 flex items-center gap-1.5">
+              <Flame className="w-4 h-4 text-emerald-400" /> Today&apos;s Nutrition
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">Calorie balance & protein target</p>
+          </div>
           <div className="text-sm">
-            <span className="text-emerald-500 font-bold">{stats.calories.current}</span>
-            <span className="text-slate-400"> / {stats.calories.goal} kcal</span>
+            <span className="text-emerald-400 font-bold">{consumedCalories}</span>
+            <span className="text-slate-400 text-xs"> / {goalCalories} kcal</span>
           </div>
         </div>
-        <div className="h-2 w-full bg-slate-700 rounded-full mb-6 overflow-hidden">
-          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (stats.calories.current / stats.calories.goal) * 100)}%` }}></div>
+
+        <div className="h-2 w-full bg-slate-800 rounded-full mb-4 overflow-hidden">
+          <div
+            className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+            style={{ width: `${caloriePercentage}%` }}
+          ></div>
         </div>
 
-        <div className="space-y-3">
-          {Object.entries(stats.macros).map(([macro, data]: [string, Macro]) => (
-            <div key={macro} className="flex items-center gap-3">
-              <div className="w-16 text-xs text-slate-400 capitalize">{macro}</div>
-              <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full ${macro === 'protein' ? 'bg-blue-500' : macro === 'carbs' ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${Math.min(100, (data.current / data.goal) * 100)}%` }}></div>
-              </div>
-              <div className="w-12 text-right text-xs text-slate-300">{data.current}g</div>
-            </div>
-          ))}
+        <div className="flex justify-between items-center text-xs text-slate-400 pt-1 border-t border-slate-800/80">
+          <span>Protein Intake:</span>
+          <span className="font-semibold text-slate-200">
+            <span className="text-blue-400">{consumedProtein}g</span> / {goalProtein}g
+          </span>
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Recent Activity</h2>
-        <div className="space-y-3">
-          {stats.recentActivity.map((activity: ActivityItem) => (
-            <div key={activity.id} className="flex items-center gap-4 bg-slate-800 p-3 rounded-lg border border-slate-700">
-              <div className="p-2 bg-slate-900 rounded-lg">
-                {activity.type === 'workout' && <Dumbbell className="w-5 h-5 text-emerald-500" />}
-                {activity.type === 'cardio' && <Activity className="w-5 h-5 text-emerald-500" />}
-                {activity.type === 'meal' && <Utensils className="w-5 h-5 text-emerald-500" />}
-              </div>
-              <div>
-                <div className="text-sm font-medium text-slate-200">{activity.title}</div>
-                <div className="text-xs text-slate-400">{activity.time}</div>
-              </div>
+      {/* Today Summary Activity */}
+      <div className="bg-slate-900 p-5 rounded-xl border border-slate-800">
+        <h2 className="text-base font-semibold text-slate-200 mb-3 flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-amber-400" /> Today&apos;s Activity Summary
+        </h2>
+        
+        {loading ? (
+          <div className="py-4 text-center text-xs text-slate-500">Loading today&apos;s logs...</div>
+        ) : (data?.todayWorkouts || 0) === 0 && (data?.todayCardio || 0) === 0 && consumedCalories === 0 ? (
+          <div className="py-6 text-center text-xs text-slate-500">
+            No activity recorded today yet. Ready for your first session?
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-sm p-2.5 rounded-lg bg-slate-800/50">
+              <span className="text-slate-300 flex items-center gap-2">
+                <Dumbbell className="w-4 h-4 text-emerald-400" /> Weight Sessions Today:
+              </span>
+              <span className="font-bold text-slate-100">{data?.todayWorkouts || 0}</span>
             </div>
-          ))}
-        </div>
+            <div className="flex justify-between items-center text-sm p-2.5 rounded-lg bg-slate-800/50">
+              <span className="text-slate-300 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-400" /> Cardio Sessions Today:
+              </span>
+              <span className="font-bold text-slate-100">{data?.todayCardio || 0}</span>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

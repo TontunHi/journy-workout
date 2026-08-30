@@ -8,22 +8,19 @@ export interface ProgressiveOverloadData {
 }
 
 export function ProgressiveOverloadChart({ data }: { data: ProgressiveOverloadData[] }) {
-  const displayData = data.length > 0 ? data : [
-    {
-      id: "Mock Exercise",
-      data: [
-        { x: "Jan", y: 100 },
-        { x: "Feb", y: 105 },
-        { x: "Mar", y: 115 },
-        { x: "Apr", y: 120 },
-      ]
-    }
-  ];
+  if (!data || data.length === 0 || !data[0]?.data || data[0].data.length === 0) {
+    return (
+      <div className="h-[260px] w-full flex flex-col items-center justify-center text-xs text-slate-500 bg-slate-800/30 rounded-xl border border-dashed border-slate-800">
+        <p>No historical workout sets logged for this exercise yet.</p>
+        <p className="mt-1 text-slate-600">Start logging workouts to track strength progression!</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[300px] w-full">
       <ResponsiveLine
-        data={displayData}
+        data={data}
         margin={{ top: 30, right: 30, bottom: 50, left: 50 }}
         xScale={{ type: 'point' }}
         yScale={{
@@ -48,7 +45,7 @@ export function ProgressiveOverloadChart({ data }: { data: ProgressiveOverloadDa
           tickSize: 5,
           tickPadding: 5,
           tickRotation: 0,
-          legend: 'Weight (lbs/kg)',
+          legend: 'Weight (kg)',
           legendOffset: -40,
           legendPosition: 'middle'
         }}
@@ -59,7 +56,7 @@ export function ProgressiveOverloadChart({ data }: { data: ProgressiveOverloadDa
         pointLabelYOffset={-12}
         useMesh={true}
         theme={nivoDarkTheme}
-        colors={[ '#10b981', '#3b82f6', '#f59e0b' ]}
+        colors={['#10b981', '#3b82f6', '#f59e0b']}
       />
     </div>
   );

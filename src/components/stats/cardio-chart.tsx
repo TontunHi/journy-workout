@@ -11,17 +11,21 @@ export interface CardioData {
 }
 
 export function CardioChart({ data }: { data: CardioData[] }) {
-  const displayData = data.length > 0 ? data : [
-    { type: "TREADMILL", duration: 180, distance: 28.5, calories: 1950 },
-    { type: "CYCLING", duration: 240, distance: 75.0, calories: 2400 },
-    { type: "SWIMMING", duration: 90, distance: 4.5, calories: 850 },
-    { type: "JUMP_ROPE", duration: 60, distance: 5.0, calories: 720 },
-  ];
+  const hasData = data && data.length > 0 && data.some((d) => d.duration > 0);
+
+  if (!hasData) {
+    return (
+      <div className="h-[260px] w-full flex flex-col items-center justify-center text-xs text-slate-500 bg-slate-800/30 rounded-xl border border-dashed border-slate-800">
+        <p>No cardio activity recorded for this period.</p>
+        <p className="mt-1 text-slate-600">Track your runs or cycling sessions to view analytics.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[300px] w-full">
       <ResponsiveBar
-        data={displayData}
+        data={data}
         keys={['duration']}
         indexBy="type"
         margin={{ top: 20, right: 20, bottom: 50, left: 55 }}

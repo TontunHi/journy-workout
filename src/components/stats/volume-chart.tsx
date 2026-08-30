@@ -8,17 +8,19 @@ export interface VolumeData {
 }
 
 export function VolumeChart({ data }: { data: VolumeData[] }) {
-  const displayData = data.length > 0 ? data : [
-    { period: 'Week 1', CHEST: 4200, BACK: 5500, LEGS: 6800, ARMS: 2400, SHOULDERS: 3100, CORE: 1200 },
-    { period: 'Week 2', CHEST: 4600, BACK: 5900, LEGS: 7200, ARMS: 2700, SHOULDERS: 3400, CORE: 1300 },
-    { period: 'Week 3', CHEST: 4900, BACK: 6300, LEGS: 7800, ARMS: 2900, SHOULDERS: 3700, CORE: 1500 },
-    { period: 'Week 4', CHEST: 5300, BACK: 6800, LEGS: 8400, ARMS: 3200, SHOULDERS: 4000, CORE: 1600 },
-  ];
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-[260px] w-full flex flex-col items-center justify-center text-xs text-slate-500 bg-slate-800/30 rounded-xl border border-dashed border-slate-800">
+        <p>No volume data available.</p>
+        <p className="mt-1 text-slate-600">Weekly weight volume will show here once workouts are logged.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[300px] w-full">
       <ResponsiveBar
-        data={displayData}
+        data={data}
         keys={['CHEST', 'BACK', 'LEGS', 'ARMS', 'SHOULDERS', 'CORE']}
         indexBy="period"
         margin={{ top: 20, right: 20, bottom: 50, left: 55 }}

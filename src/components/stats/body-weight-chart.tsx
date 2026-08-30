@@ -8,22 +8,21 @@ export interface BodyWeightData {
 }
 
 export function BodyWeightChart({ data }: { data: BodyWeightData[] }) {
-  const displayData = data.length > 0 ? data : [
-    {
-      id: "Body Weight",
-      data: [
-        { x: "Jan", y: 180 },
-        { x: "Feb", y: 178 },
-        { x: "Mar", y: 176 },
-        { x: "Apr", y: 175 },
-      ]
-    }
-  ];
+  const hasData = data && data.length > 0 && data[0]?.data && data[0].data.length > 0;
+
+  if (!hasData) {
+    return (
+      <div className="h-[260px] w-full flex flex-col items-center justify-center text-xs text-slate-500 bg-slate-800/30 rounded-xl border border-dashed border-slate-800">
+        <p>No weight logs recorded yet.</p>
+        <p className="mt-1 text-slate-600">Use &quot;Log Today&quot; above to start tracking your weight trend!</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[300px] w-full">
       <ResponsiveLine
-        data={displayData}
+        data={data}
         margin={{ top: 30, right: 30, bottom: 50, left: 50 }}
         xScale={{ type: 'point' }}
         yScale={{
@@ -48,7 +47,7 @@ export function BodyWeightChart({ data }: { data: BodyWeightData[] }) {
           tickSize: 5,
           tickPadding: 5,
           tickRotation: 0,
-          legend: 'Weight',
+          legend: 'Weight (kg)',
           legendOffset: -40,
           legendPosition: 'middle'
         }}
@@ -59,7 +58,7 @@ export function BodyWeightChart({ data }: { data: BodyWeightData[] }) {
         pointLabelYOffset={-12}
         useMesh={true}
         theme={nivoDarkTheme}
-        colors={[ '#3b82f6' ]} // blue-500
+        colors={['#10b981']}
       />
     </div>
   );

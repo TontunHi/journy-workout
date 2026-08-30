@@ -42,7 +42,7 @@ export default function StatsPage() {
   const [exercises, setExercises] = useState<ExerciseOption[]>([]);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
   const [prList, setPrList] = useState<PRItem[]>([]);
-  const [currentWeight, setCurrentWeight] = useState<number>(76.5);
+  const [currentWeight, setCurrentWeight] = useState<number | null>(null);
 
   // Overview summary metrics
   const [totalWorkouts, setTotalWorkouts] = useState<number>(0);
@@ -83,10 +83,12 @@ export default function StatsPage() {
           const cRes = await fetch('/api/stats/calories?period=month');
           if (cRes.ok) {
             const json = await cRes.json();
-            const cals = json.data?.[0]?.data || [];
+            const cals = json.data || [];
             if (cals.length > 0) {
-              const avg = Math.round(cals.reduce((a: number, b: { y: number }) => a + b.y, 0) / cals.length);
+              const avg = Math.round(cals.reduce((a: number, b: { calories: number }) => a + b.calories, 0) / cals.length);
               setAvgCalories(avg);
+            } else {
+              setAvgCalories(0);
             }
           }
         } else if (activeTab === 'Strength') {
@@ -131,6 +133,8 @@ export default function StatsPage() {
             const points = list[0]?.data || [];
             if (points.length > 0) {
               setCurrentWeight(points[points.length - 1].y);
+            } else {
+              setCurrentWeight(null);
             }
           }
           const prRes = await fetch('/api/stats/personal-records');
@@ -206,13 +210,13 @@ export default function StatsPage() {
                 <div className="text-xs text-slate-400 mb-1 flex items-center justify-center gap-1">
                   <Dumbbell className="w-3.5 h-3.5 text-emerald-400" /> Total Workouts
                 </div>
-                <div className="text-3xl font-bold text-emerald-400">{totalWorkouts || 65}</div>
+                <div className="text-3xl font-bold text-emerald-400">{totalWorkouts}</div>
               </div>
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
                 <div className="text-xs text-slate-400 mb-1 flex items-center justify-center gap-1">
                   <Flame className="w-3.5 h-3.5 text-amber-400" /> Avg Daily Calories
                 </div>
-                <div className="text-3xl font-bold text-amber-400">{avgCalories || 2150} <span className="text-xs font-normal text-slate-400">kcal</span></div>
+                <div className="text-3xl font-bold text-amber-400">{avgCalories} <span className="text-xs font-normal text-slate-400">kcal</span></div>
               </div>
             </div>
 
@@ -264,11 +268,11 @@ export default function StatsPage() {
             <div className="grid grid-cols-2 gap-3 mb-2">
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
                 <div className="text-xs text-slate-400 mb-1">Total Distance (30d)</div>
-                <div className="text-2xl font-bold text-blue-400">{totalCardioDist || '142.5'} <span className="text-xs font-normal text-slate-400">km</span></div>
+                <div className="text-2xl font-bold text-blue-400">{totalCardioDist} <span className="text-xs font-normal text-slate-400">km</span></div>
               </div>
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
-                <div className="text-xs text-slate-400 mb-1">Avg Session Duration</div>
-                <div className="text-2xl font-bold text-emerald-400">38 <span className="text-xs font-normal text-slate-400">min</span></div>
+                <div className="text-xs text-slate-400 mb-1">Cardio Sessions</div>
+                <div className="text-2xl font-bold text-emerald-400">{cardioData.length}</div>
               </div>
             </div>
 
@@ -304,7 +308,9 @@ export default function StatsPage() {
               <div className="flex justify-between items-end mb-2">
                 <div>
                   <h3 className="font-semibold text-slate-200">Current Body Weight</h3>
-                  <div className="text-3xl font-bold text-emerald-400 mt-1">{currentWeight} <span className="text-sm font-normal text-slate-400">kg</span></div>
+                  <div className="text-3xl font-bold text-emerald-400 mt-1">
+                    {currentWeight !== null ? `${currentWeight} kg` : 'Not logged yet'}
+                  </div>
                 </div>
                 <button 
                   onClick={() => setShowWeightForm(!showWeightForm)}
@@ -337,30 +343,29 @@ export default function StatsPage() {
               <h3 className="font-semibold text-slate-200 mb-3 flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-500" /> Personal Records (PRs)
               </h3>
-              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                {(prList.length > 0 ? prList : [
-                  { id: '1', exerciseId: 'ex1', weight: 105, reps: 6, date: '2026-08-25', exerciseName: 'Bench Press' },
-                  { id: '2', exerciseId: 'ex2', weight: 145, reps: 5, date: '2026-08-22', exerciseName: 'Squat' },
-                  { id: '3', exerciseId: 'ex3', weight: 170, reps: 4, date: '2026-08-20', exerciseName: 'Deadlift' },
-                  { id: '4', exerciseId: 'ex4', weight: 70, reps: 8, date: '2026-08-18', exerciseName: 'Overhead Press' },
-                  { id: '5', exerciseId: 'ex5', weight: 42.5, reps: 10, date: '2026-08-15', exerciseName: 'Barbell Curl' },
-                ]).map((pr, idx) => (
-                  <div key={pr.id || idx} className="flex justify-between items-center pb-2 border-b border-slate-800/80 text-sm">
-                    <span className="text-slate-300 font-medium">{pr.exerciseName || getExerciseName(pr.exerciseId)}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-emerald-400 font-bold">{pr.weight} kg</span>
-                      <span className="text-xs text-slate-500">× {pr.reps} reps</span>
+              {prList.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-500">
+                  No personal records yet. Log your first workout sets to set PRs!
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                  {prList.map((pr, idx) => (
+                    <div key={pr.id || idx} className="flex justify-between items-center pb-2 border-b border-slate-800/80 text-sm">
+                      <span className="text-slate-300 font-medium">{pr.exerciseName || getExerciseName(pr.exerciseId)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">{pr.weight} kg</span>
+                        <span className="text-xs text-slate-500">× {pr.reps} reps</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
               <h3 className="font-semibold text-slate-200 mb-1 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-500" /> 90-Day Weight Trend
+                <TrendingUp className="w-5 h-5 text-emerald-500" /> Weight Trend
               </h3>
-              <p className="text-xs text-slate-400 mb-4">Steady cut progression from 82.5 kg</p>
               <BodyWeightChart data={weightData} />
             </div>
           </>

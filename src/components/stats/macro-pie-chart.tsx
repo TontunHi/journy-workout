@@ -6,63 +6,39 @@ export interface MacroData {
   id: string;
   label: string;
   value: number;
-  color?: string;
 }
 
 export function MacroPieChart({ data }: { data: MacroData[] }) {
-  const displayData = data.length > 0 ? data : [
-    { id: "Protein", label: "Protein", value: 150 },
-    { id: "Carbs", label: "Carbs", value: 200 },
-    { id: "Fat", label: "Fat", value: 65 },
-  ];
+  const hasData = data && data.length > 0 && data.some((d) => d.value > 0);
+
+  if (!hasData) {
+    return (
+      <div className="h-[260px] w-full flex flex-col items-center justify-center text-xs text-slate-500 bg-slate-800/30 rounded-xl border border-dashed border-slate-800">
+        <p>No nutrition data logged for this period.</p>
+        <p className="mt-1 text-slate-600">Log your daily meals to see your macronutrient split.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[300px] w-full">
       <ResponsivePie
-        data={displayData}
-        margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
+        data={data}
+        margin={{ top: 30, right: 80, bottom: 30, left: 80 }}
         innerRadius={0.5}
-        padAngle={0.7}
-        cornerRadius={3}
+        padAngle={1.5}
+        cornerRadius={4}
         activeOuterRadiusOffset={8}
-        colors={[ '#10b981', '#3b82f6', '#f59e0b' ]}
         borderWidth={1}
-        borderColor={{
-          from: 'color',
-          modifiers: [ [ 'darker', 0.2 ] ]
-        }}
+        borderColor={{ from: 'color', modifiers: [ [ 'darker', 0.2 ] ] }}
+        colors={[ '#3b82f6', '#f59e0b', '#ef4444' ]} // Protein (blue), Carbs (amber), Fat (red)
+        theme={nivoDarkTheme}
         arcLinkLabelsSkipAngle={10}
         arcLinkLabelsTextColor="#94a3b8"
         arcLinkLabelsThickness={2}
         arcLinkLabelsColor={{ from: 'color' }}
         arcLabelsSkipAngle={10}
         arcLabelsTextColor="#ffffff"
-        theme={nivoDarkTheme}
-        legends={[
-          {
-            anchor: 'bottom',
-            direction: 'row',
-            justify: false,
-            translateX: 0,
-            translateY: 56,
-            itemsSpacing: 0,
-            itemWidth: 100,
-            itemHeight: 18,
-            itemTextColor: '#94a3b8',
-            itemDirection: 'left-to-right',
-            itemOpacity: 1,
-            symbolSize: 18,
-            symbolShape: 'circle',
-            effects: [
-              {
-                on: 'hover',
-                style: {
-                  itemTextColor: '#f8fafc'
-                }
-              }
-            ]
-          }
-        ]}
       />
     </div>
   );
