@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Bell, Smartphone, Target, User, Check, Scale } from 'lucide-react';
+import { ArrowLeft, Bell, Smartphone, Target, User, Check, Scale, Dumbbell } from 'lucide-react';
 
 export default function SettingsPage() {
   const [notifications, setNotifications] = useState({
@@ -181,6 +181,17 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+
+            {/* Link to Exercises Library */}
+            <Link href="/exercises" className="p-4 flex justify-between items-center hover:bg-slate-800/50 transition-colors block">
+              <div>
+                <div className="font-medium text-slate-200 flex items-center gap-2">
+                  <Dumbbell className="w-4 h-4 text-emerald-400" /> Exercises Library
+                </div>
+                <div className="text-xs text-slate-500">Create, edit, or remove custom workout exercises</div>
+              </div>
+              <span className="text-xs text-emerald-400 font-semibold">Manage &rarr;</span>
+            </Link>
 
             {/* Link to Nutrition Goals */}
             <Link href="/nutrition/goals" className="p-4 flex justify-between items-center hover:bg-slate-800/50 transition-colors block">

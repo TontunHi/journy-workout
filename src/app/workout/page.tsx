@@ -40,12 +40,20 @@ export default function WorkoutPage() {
           <h1 className="text-2xl font-bold text-slate-100">Workouts</h1>
           <p className="text-xs text-slate-400">Weight training & strength logs</p>
         </div>
-        <Link
-          href="/workout/new"
-          className="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-500/20"
-        >
-          <Plus className="w-4 h-4" /> Start Workout
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/exercises"
+            className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+          >
+            <Dumbbell className="w-3.5 h-3.5 text-emerald-400" /> Exercises
+          </Link>
+          <Link
+            href="/workout/new"
+            className="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-lg shadow-emerald-500/20"
+          >
+            <Plus className="w-4 h-4" /> Start
+          </Link>
+        </div>
       </div>
 
       {loading ? (
