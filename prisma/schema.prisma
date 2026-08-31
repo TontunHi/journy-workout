@@ -139,6 +139,7 @@ model NutritionGoal {
   dailyProtein  Float  @default(150) // grams
   dailyCarbs    Float  @default(250) // grams
   dailyFat      Float  @default(65)  // grams
+  targetWeight  Float? @default(75.0) // target body weight (kg)
 
   updatedAt DateTime @updatedAt
 }
